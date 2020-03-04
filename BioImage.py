@@ -18,13 +18,13 @@ from skimage.filters import threshold_isodata
 from skimage.measure import perimeter
 
 #folders = ['Y_2_converted', 'Y_3_converted', 'Y_4_converted','O_1_converted', 'O_2_converted']
-folders = ['old', 'young']
+folders = ['Old', 'Young']
 
 class BioImage:
   
     def __init__(self, folder, num):
         # assemble filename from image_id and folder
-        base_folder = '../Amrita_5feb/'
+        base_folder = '../Amrita_29feb/'
         header_pickle= base_folder + folder + '_pickle/' + folder + '__' + str(num) + '.p'
         self.name = folder + ' : ' + str(num)
         self.mask = None
