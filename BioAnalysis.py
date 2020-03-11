@@ -1,4 +1,4 @@
-from BioImage import BioImage, folders
+from BioImage import BioImage, folders, channel
 from scipy.stats import fisher_exact
 import numpy as np
 from tqdm import tqdm, trange
@@ -7,12 +7,20 @@ import sys
 from IPython.display import HTML, display
 import tabulate
 import matplotlib.pyplot as plt
+import os
+
 
 
 class BioAnalysis:
-    def __init__(self):
+    def __init__(self, root = None):
+
+        self.root = root
+        self.data_path = self.root + '/Data/'
+        if not os.path.exists(self.data_path):
+            os.mkdir(self.data_path)
+
         try:
-            self.dataset = np.load('Data/dataset.npy')
+            self.dataset = np.load(self.data_path + 'dataset.npy')
         except:
             print('Could not load dataset, computing features')
             sys.stdout.flush()
@@ -20,7 +28,7 @@ class BioAnalysis:
             self.computeFeatures()
             self.saveDataset()
         try:
-            self.filtered_dataset = np.load('Data/filtered_dataset.npy')
+            self.filtered_dataset = np.load(self.data_path + 'filtered_dataset.npy')
         except:
             print('Could not load filtered dataset, computing filters')
             sys.stdout.flush()
@@ -28,7 +36,7 @@ class BioAnalysis:
             self.runFilter()
             self.saveFilteredDataset()
         try:
-            self.activations = np.load('Data/activations.npy')
+            self.activations = np.load(self.data_path + 'activations.npy')
         except:
             print('Could not load activations, computing activations')
             sys.stdout.flush()
@@ -36,8 +44,9 @@ class BioAnalysis:
             self.computeActivations()
             self.saveActivations()
         try:
-            self.points_young = np.load('Data/points_young.npy')
-            self.points_old = np.load('Data/points_old.npy')
+            self.points_young = np.load(self.data_path + 'points_young.npy')
+            self.points_old = np.load(self.data_path + 'points_old.npy')
+            self.points = np.load(self.data_path + 'points.npy')
         except:
             print('Could not load points, computing points')
             sys.stdout.flush()
@@ -59,7 +68,7 @@ class BioAnalysis:
             print('Processing folder ' + folder + ':')
             sys.stdout.flush()
             for i in trange(0,10000):
-                b = BioImage(folder, i)
+                b = BioImage(folder, i, self.root)
                 try: 
                     features = b.getExtrema()
                 except Exception as e: 
@@ -87,7 +96,7 @@ class BioAnalysis:
         return
 
     def showImage(self, folder, sample):
-        bioimage = BioImage(folder, sample)
+        bioimage = BioImage(folder, sample, self.root)
         bioimage.showImage()
         features = bioimage.getExtrema()
         print('Number of ch1 maxima: ', features[0])
@@ -121,7 +130,7 @@ class BioAnalysis:
         for row in tqdm(self.filtered_dataset):
             folder = folders[int(row[0])]
             index = int((row[1]))
-            b = BioImage(folder, index)
+            b = BioImage(folder, index, self.root)
             if row_one:
                 #print(b.getActivations())
                 self.activations = b.getActivations()
@@ -168,19 +177,38 @@ class BioAnalysis:
         if self.points_young is None:
             rowOld = True
             rowYoung = True
+            rowPoints = True
+            points = np.array([])
             for row in tqdm(self.filtered_dataset):
                 folder = folders[int(row[0])]
                 index = int((row[1]))
-                b = BioImage(folder, index)
+                b = BioImage(folder, index, self.root)
+                # channel 2
                 mask = b.getThresholded(b.ch2)
                 ch2 = np.sum(np.multiply(mask, b.ch2))
+                # Channel 7
                 mask = b.getThresholded(b.ch7)
                 ch7 = np.sum(np.multiply(mask, b.ch7))
+                #channel 11:
                 mask = b.getThresholded(b.ch11)
                 ch11 = np.sum(np.multiply(mask, b.ch11))
-                p = np.array([ch2, ch7, ch11])
+                try:
+                    # channel 4
+                    mask = b.getThresholded(b.ch4)
+                    ch7 = np.sum(np.multiply(mask, b.ch4))
+                    p = np.array([ch2, ch7, ch11,ch4])
+                except:
+                    p = np.array([ch2, ch7, ch11])
+
                 s = b.getActivationSizes()
                 p = np.append(p,s)
+                if rowPoints:
+                    points = p
+                    rowPoints = False
+                else:
+                    points = np.vstack((points, p))
+
+
                 if row[0]==0: # Old
                     if rowOld: 
                         points_old = p
@@ -195,9 +223,10 @@ class BioAnalysis:
                         points_young = np.vstack((points_young,p))
             self.points_young = points_young
             self.points_old= points_old
+            self.points = points
         return
 
-    def getTotalIntensityDistribution(self):
+    def getTotalIntensityDistribution(self, hist_range = []):
         points_old = self.points_old
         points_young = self.points_young
         # compute means and variance of old and young
@@ -205,48 +234,61 @@ class BioAnalysis:
         var_old = np.var(points_old, axis=0)
         mean_young = np.mean(points_young, axis=0)
         var_young = np.var(points_young, axis=0)
-        self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3])
-        self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6])
+        if not hist_range:
+            self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3])
+            self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6])
+        else:
+            self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3], hist_range)
+            self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6],hist_range)
         # tests
         return {'Old':{'Mean':mean_old, 'Var': var_old}, 'Young':{'Mean':mean_young, 'Var': var_young}}
 
-    def plotIntensityDistribution(self, title, points_young, points_old):
+    def plotIntensityDistribution(self, title, points_young, points_old, hist_range=[]):
         plt.figure()
-        plt.subplot(3, 1, 1)
-        plt.hist(points_young[:, 0], bins = 100, density=True, color='r', histtype='step')
-        plt.hist(points_old[:, 0], bins = 100, density = True, color='b', histtype='step')
+        ax1 = plt.subplot(3, 1, 1)
+        plt.hist(points_young[:, 0], bins = 1000, density=True, color='r', histtype='step')
+        plt.hist(points_old[:, 0], bins = 1000, density = True, color='b', histtype='step')
         plt.legend(['young', 'old'])
-        plt.title(title + ' CD63')
-        plt.subplot(3, 1, 2)
-        plt.hist(points_young[:, 1], bins = 100, density=True, color='r', histtype='step')
-        plt.hist(points_old[:, 1], bins = 100, density = True, color='b', histtype='step')
+        plt.title(title + ' ' + channel[2])
+        ax2 = plt.subplot(3, 1, 2)
+        plt.hist(points_young[:, 1], bins = 1000, density=True, color='r', histtype='step')
+        plt.hist(points_old[:, 1], bins = 1000, density = True, color='b', histtype='step')
         plt.legend(['young', 'old'])
-        plt.title('CD81')
-        plt.subplot(3,1,3)
-        plt.hist(points_young[:, 2], bins = 100, density=True, color='r', histtype='step')
-        plt.hist(points_old[:, 2], bins = 100, density = True, color='b', histtype='step')
+        plt.title(channel[7])
+        ax3= plt.subplot(3,1,3)
+        plt.hist(points_young[:, 2], bins = 1000, density=True, color='r', histtype='step')
+        plt.hist(points_old[:, 2], bins = 1000, density = True, color='b', histtype='step')
         plt.legend(['young', 'old'])
-        plt.title('CD9')
+        plt.title(channel[11])
         plt.tight_layout()
+        if hist_range:
+            ax1.set_xlim(hist_range[0])
+            ax2.set_xlim(hist_range[1])
+            ax3.set_xlim(hist_range[2])
         return
-    def plotSizeDistribution(self, title, points_young, points_old):
+    def plotSizeDistribution(self, title, points_young, points_old, hist_range=[]):
         plt.figure()
-        plt.subplot(3, 1, 1)
+        ax1 = plt.subplot(3, 1, 1)
         plt.hist(points_young[:, 0], bins = 100, density=True, color='r', histtype='step')
         plt.hist(points_old[:, 0], bins = 100, density = True, color='b', histtype='step')
         plt.legend(['young', 'old'])
-        plt.title(title + ' CD63')
-        plt.subplot(3, 1, 2)
+        plt.title(title + ' ' + channel[2])
+        ax2 = plt.subplot(3, 1, 2)
         plt.hist(points_young[:, 1], bins = 100, density=True, color='r', histtype='step')
         plt.hist(points_old[:, 1], bins = 100, density = True, color='b', histtype='step')
         plt.legend(['young', 'old'])
-        plt.title('CD81')
-        plt.subplot(3, 1, 3)
+        plt.title(channel[7])
+        ax3 = plt.subplot(3, 1, 3)
         plt.hist(points_young[:, 2], bins = 100, density=True, color='r', histtype='step')
         plt.hist(points_old[:, 2], bins = 100, density = True, color='b', histtype='step')
         plt.legend(['young', 'old'])
-        plt.title('CD9')
+        plt.title(channel[11])
         plt.tight_layout()
+        if hist_range:
+            ax1.set_xlim(hist_range[3])
+            ax2.set_xlim(hist_range[4])
+            ax3.set_xlim(hist_range[5])
+
         return
 
 
@@ -265,18 +307,20 @@ class BioAnalysis:
 
     def saveDataset(self):
         if self.dataset is not None:
-            np.save('Data/dataset', self.dataset)
+            np.save(self.data_path + 'dataset', self.dataset)
     def saveFilteredDataset(self):
         if self.filtered_dataset is not None:
-            np.save('Data/filtered_dataset', self.filtered_dataset)
+            np.save(self.data_path + 'filtered_dataset', self.filtered_dataset)
     def saveActivations(self):
         if self.activations is not None:
-            np.save('Data/activations', self.activations)
+            np.save(self.data_path + 'activations', self.activations)
     def savePoints(self):
         if self.points_young is not None:
-            np.save('Data/points_young', self.points_young)
+            np.save(self.data_path + 'points_young', self.points_young)
         if self.points_old is not None:
-            np.save('Data/points_old', self.points_old)
+            np.save(self.data_path + 'points_old', self.points_old)
+        if self.points is not None:
+            np.save(self.data_path + 'points', self.points)
         
 
 

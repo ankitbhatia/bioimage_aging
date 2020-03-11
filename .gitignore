@@ -4,8 +4,5 @@ __pycache__/*
 .ipynb_checkpoints/*
 clustering_dataset.hdf5
 create_hdf5_dataset.py
-BioImage.pyc
-BioImage.pyc
-gaussfitter.pyc
-BioAnalysis.pyc
-BioImage.pyc
+*.pyc
+.pyc

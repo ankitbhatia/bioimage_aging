@@ -18,13 +18,16 @@ from skimage.filters import threshold_isodata
 from skimage.measure import perimeter
 
 #folders = ['Y_2_converted', 'Y_3_converted', 'Y_4_converted','O_1_converted', 'O_2_converted']
-folders = ['Old', 'Young']
+folders = ['old', 'young']
+channel = {1:'B/W', 2:'CD63', 3: 'PanEV', 4: 'alt KL', 6: 'SSC', 7:'cd81', 9: 'B/W', 11:'WT KL'}
 
 class BioImage:
   
-    def __init__(self, folder, num):
+    def __init__(self,  folder, num, root = '../Amrita_29feb'):
         # assemble filename from image_id and folder
-        base_folder = '../Amrita_29feb/'
+        # base_folder = '../Amrita_29feb/'
+        # base_folder = '../Amrita_5feb/'
+        base_folder = root
         header_pickle= base_folder + folder + '_pickle/' + folder + '__' + str(num) + '.p'
         self.name = folder + ' : ' + str(num)
         self.mask = None
@@ -33,6 +36,10 @@ class BioImage:
             self.ch1 = self.image['Ch1 - B/W']
             self.ch2 = self.image['Ch2 - CD63']
             self.ch3 = self.image['Ch3 - PanEV']
+            try:
+                self.ch4 = self.image['Ch4 - ']
+            except:
+                pass
             self.ch6 = self.image['Ch6 - Side Scatter']
             self.ch7 = self.image['Ch7 - CD81']
             self.ch9 = self.image['Ch9 - B/W']
@@ -43,6 +50,10 @@ class BioImage:
             self.ch1 = Image.open(header + 'Ch1.ome.tif')
             self.ch2 = Image.open(header + 'Ch2.ome.tif')
             self.ch3 = Image.open(header + 'Ch3.ome.tif')
+            try:
+                self.ch4 = Image.open(header + 'Ch4.ome.tif')
+            except:
+                pass
             self.ch6 = Image.open(header + 'Ch6.ome.tif')
             self.ch7 = Image.open(header + 'Ch7.ome.tif')
             self.ch9 = Image.open(header + 'Ch9.ome.tif')
@@ -51,17 +62,31 @@ class BioImage:
             self.ch1 = np.array(self.ch1)/4000.0
             self.ch2 = np.array(self.ch2)/4000.0
             self.ch3 = np.array(self.ch3)/4000.0
+            try: 
+                self.ch4 = np.array(self.ch4)/4000.0
+            except:
+                pass
             self.ch6 = np.array(self.ch6)/4000.0
             self.ch7 = np.array(self.ch7)/4000.0
             self.ch9 = np.array(self.ch9)/4000.0
             self.ch11 = np.array(self.ch11)/4000.0
-            self.image = {'Ch1 - B/W':self.ch1, 
-                          'Ch9 - B/W':self.ch9, 
-                          'Ch6 - Side Scatter':self.ch6, 
-                          'Ch2 - CD63':self.ch2, 
-                          'Ch3 - PanEV':self.ch3, 
-                          'Ch7 - CD81':self.ch7, 
-                          'Ch11 - CD9':self.ch11}
+            try:
+                self.image = {'Ch' + str(1 )+ channel[1]:self.ch1, 
+                              'Ch' + str(9 )+ channel[9 ]:self.ch9, 
+                              'Ch' + str(6 )+ channel[6 ]:self.ch6, 
+                              'Ch' + str(2 )+ channel[2 ]:self.ch2, 
+                              'Ch' + str(3 )+ channel[3 ]:self.ch3, 
+                              'Ch' + str(4 )+ channel[4 ]:self.ch4, 
+                              'Ch' + str(7 )+ channel[7 ]:self.ch7, 
+                              'Ch' + str(11)+ channel[11]:self.ch11}
+            except:
+                self.image = {'Ch' + str(1 )+ channel[1]:self.ch1, 
+                              'Ch' + str(9 )+ channel[9 ]:self.ch9, 
+                              'Ch' + str(6 )+ channel[6 ]:self.ch6, 
+                              'Ch' + str(2 )+ channel[2 ]:self.ch2, 
+                              'Ch' + str(3 )+ channel[3 ]:self.ch3, 
+                              'Ch' + str(7 )+ channel[7 ]:self.ch7, 
+                              'Ch' + str(11)+ channel[11]:self.ch11}
             pickle.dump(self.image, open(header_pickle,'wb'))
 
 
