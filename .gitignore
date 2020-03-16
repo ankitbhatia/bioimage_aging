@@ -8,3 +8,5 @@ create_hdf5_dataset.py
 .pyc
 points_old.csv
 points_young.csv
+*.pdf
+*.eps
