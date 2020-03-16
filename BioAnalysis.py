@@ -195,7 +195,7 @@ class BioAnalysis:
                 try:
                     # channel 4
                     mask = b.getThresholded(b.ch4)
-                    ch7 = np.sum(np.multiply(mask, b.ch4))
+                    ch4 = np.sum(np.multiply(mask, b.ch4))
                     p = np.array([ch2, ch7, ch11,ch4])
                 except:
                     p = np.array([ch2, ch7, ch11])

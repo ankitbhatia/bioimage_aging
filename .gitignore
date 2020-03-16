@@ -6,3 +6,5 @@ clustering_dataset.hdf5
 create_hdf5_dataset.py
 *.pyc
 .pyc
+points_old.csv
+points_young.csv
