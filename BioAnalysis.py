@@ -226,7 +226,7 @@ class BioAnalysis:
             self.points = points
         return
 
-    def getTotalIntensityDistribution(self, hist_range = []):
+    def getTotalIntensityDistribution(self, plots_on = True, hist_range = []):
         points_old = self.points_old
         points_young = self.points_young
         # compute means and variance of old and young
@@ -234,12 +234,13 @@ class BioAnalysis:
         var_old = np.var(points_old, axis=0)
         mean_young = np.mean(points_young, axis=0)
         var_young = np.var(points_young, axis=0)
-        if not hist_range:
-            self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3])
-            self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6])
-        else:
-            self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3], hist_range)
-            self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6],hist_range)
+        if plots_on:
+            if not hist_range:
+                self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3])
+                self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6])
+            else:
+                self.plotIntensityDistribution("Intensity", points_young[:,0:3], points_old[:,0:3], hist_range)
+                self.plotSizeDistribution("Size", points_young[:,3:6], points_old[:,3:6],hist_range)
         # tests
         return {'Old':{'Mean':mean_old, 'Var': var_old}, 'Young':{'Mean':mean_young, 'Var': var_young}}
 
