@@ -16,6 +16,7 @@ from skimage.morphology import reconstruction, binary_closing
 from scipy.ndimage.morphology import binary_fill_holes
 from skimage.filters import threshold_isodata
 from skimage.measure import perimeter
+import os
 
 #folders = ['Y_2_converted', 'Y_3_converted', 'Y_4_converted','O_1_converted', 'O_2_converted']
 folders = ['old', 'young']
