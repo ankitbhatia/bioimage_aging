@@ -24,11 +24,11 @@ channel = {1:'B/W', 2:'CD63', 3: 'PanEV', 4: 'alt KL', 6: 'SSC', 7:'cd81', 9: 'B
 class BioImage:
   
     def __init__(self,  folder, num, root = '../Amrita_29feb'):
-        # assemble filename from image_id and folder
-        # base_folder = '../Amrita_29feb/'
-        # base_folder = '../Amrita_5feb/'
         base_folder = root
-        header_pickle= base_folder + folder + '_pickle/' + folder + '__' + str(num) + '.p'
+        pickle_folder = base_folder + folder + '_pickle/'
+        header_pickle= pickle_folder + folder + '__' + str(num) + '.p'
+        if not os.path.exists(pickle_folder):
+            os.mkdir(pickle_folder)
         self.name = folder + ' : ' + str(num)
         self.mask = None
         try:

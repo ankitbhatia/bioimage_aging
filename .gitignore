@@ -10,3 +10,7 @@ points_old.csv
 points_young.csv
 *.pdf
 *.eps
+correlation matrix.csv
+filtered_db.csv
+tags
+temp.tif
